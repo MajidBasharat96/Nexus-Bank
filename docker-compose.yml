@@ -1,0 +1,124 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexusbank-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nexusbank
+      POSTGRES_USER: nexusbank_user
+      POSTGRES_PASSWORD: NexusBank@Secure2024
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - nexusbank-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexusbank_user -d nexusbank"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: nexusbank-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass NexusRedis@2024
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - nexusbank-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--pass", "NexusRedis@2024", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexusbank-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: nexusbank
+      DB_USER: nexusbank_user
+      DB_PASSWORD: NexusBank@Secure2024
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: NexusRedis@2024
+      JWT_SECRET: NexusBankJWT_SuperSecret_2024_Production_Key_256bit
+      JWT_REFRESH_SECRET: NexusBankRefresh_SuperSecret_2024_Production_Key
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      FRONTEND_URL: http://localhost:5173
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/logs:/app/logs
+    networks:
+      - nexusbank-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend (Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nexusbank-ui
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - nexusbank-network
+
+  # pgAdmin (optional - for DB management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: nexusbank-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@nexusbank.com
+      PGADMIN_DEFAULT_PASSWORD: Admin@2024
+    ports:
+      - "5050:80"
+    networks:
+      - nexusbank-network
+    profiles:
+      - debug
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  nexusbank-network:
+    driver: bridge
+    name: nexusbank-network

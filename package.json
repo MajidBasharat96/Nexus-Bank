@@ -1,0 +1,20 @@
+{
+  "name": "nexusbank-core-banking",
+  "version": "1.0.0",
+  "description": "Enterprise Core Banking System — NexusBank",
+  "private": true,
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:reset": "docker compose down -v && docker compose up -d --build"
+  },
+  "keywords": ["banking", "fintech", "core-banking", "nodejs", "react", "typescript"],
+  "author": "NexusBank",
+  "license": "MIT"
+}
