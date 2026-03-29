@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { FraudController } from './fraud.service';
+import { authenticate, authorize } from '../../common/middleware/auth.middleware';
+const router = Router();
+const ctrl = new FraudController();
+router.use(authenticate);
+router.get('/stats', ctrl.stats);
+router.get('/alerts', authorize('super_admin','admin','compliance_officer'), ctrl.getAlerts);
+router.patch('/alerts/:id/review', authorize('super_admin','admin','compliance_officer'), ctrl.reviewAlert);
+export default router;

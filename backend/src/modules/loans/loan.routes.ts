@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import { LoanController } from './loan.service';
+import { authenticate, authorize } from '../../common/middleware/auth.middleware';
+const router = Router();
+const ctrl = new LoanController();
+router.use(authenticate);
+router.get('/stats', ctrl.stats);
+router.get('/', ctrl.list);
+router.post('/', ctrl.apply);
+router.get('/:id', ctrl.getById);
+router.post('/:id/approve', authorize('super_admin','admin','loan_officer'), ctrl.approve);
+router.post('/:id/repay', ctrl.repay);
+export default router;

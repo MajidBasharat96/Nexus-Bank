@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import { TransactionController } from './transaction.service';
+import { authenticate, authorize } from '../../common/middleware/auth.middleware';
+const router = Router();
+const ctrl = new TransactionController();
+router.use(authenticate);
+router.get('/stats', ctrl.stats);
+router.get('/', ctrl.list);
+router.post('/deposit', authorize('super_admin','admin','branch_manager','teller'), ctrl.deposit);
+router.post('/withdraw', authorize('super_admin','admin','branch_manager','teller'), ctrl.withdraw);
+router.post('/transfer', ctrl.transfer);
+router.post('/:id/reverse', authorize('super_admin','admin'), ctrl.reverse);
+export default router;
